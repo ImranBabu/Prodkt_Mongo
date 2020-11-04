@@ -100,6 +100,7 @@ func GetAllProductTodo(c *gin.Context) {
 	}
 
 	// Iterate through the returned cursor.
+	
     for cursor.Next(context.TODO()) {
 				var prod Product
         cursor.Decode(&prod)
