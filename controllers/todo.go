@@ -15,6 +15,7 @@ import (
 
 type Todo struct {
 	ID        string    `json:"id"`
+	ProductId string	`json:"p_id"`
 	Title     string    `json:"title"`
 	Body      string    `json:"body"`
 	Completed string    `json:"completed"`
@@ -46,6 +47,48 @@ func ProductCollection(c *mongo.Database){
 func GetAllProducts(c *gin.Context) {
 	pro := []Product{}
 	cursor, err := proCollection.Find(context.TODO(), bson.M{})
+
+	if err != nil {
+		log.Printf("Error while getting all todos, Reason: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Something went wrong",
+		})
+		return
+	}
+
+	// Iterate through the returned cursor.
+    for cursor.Next(context.TODO()) {
+				var prod Product
+        cursor.Decode(&prod)
+        pro = append(pro, prod)
+		}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "All Products",
+		"data":    pro,
+	})
+	return
+}
+
+func GetAllProductTodo(c *gin.Context) {
+	id := c.Param("proId")
+	pro := []Product{}
+
+	matchStage := bson.D{{"$match", bson.D{{"p_id", id}}}}
+	groupStage := bson.D{{"$group", bson.D{{"id", "$product" }}}}
+	cursor, err := proCollection.Find(context.TODO(), bson.M{})
+
+	showInfoCursor, err := collection.Aggregate(context.TODO(), mongo.Pipeline{matchStage, groupStage})
+	if err != nil {
+		panic(err)
+	}
+	var showsWithInfo []bson.M
+	if err = showInfoCursor.All(context.TODO(), &showsWithInfo); err != nil {
+		panic(err)
+	}
+	fmt.Println(showsWithInfo)
 
 	if err != nil {
 		log.Printf("Error while getting all todos, Reason: %v\n", err)
@@ -144,6 +187,7 @@ func CreateTodo(c *gin.Context) {
 	fmt.Println("todo : ",todo)
 	title := todo.Title
 	body := todo.Body
+	proId := todo.ProductId
 	completed := todo.Completed
 	id := guuid.New().String()
 	fmt.Println("Id : ",id)
@@ -151,6 +195,7 @@ func CreateTodo(c *gin.Context) {
 
 	newTodo := Todo{
 		ID: id,
+		ProductId : proId,
 		Title:     title,
 		Body:      body,
 		Completed: completed,

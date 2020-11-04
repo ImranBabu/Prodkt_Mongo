@@ -12,6 +12,7 @@ func Routes(router *gin.Engine) {
 	router.GET("/todos", controllers.GetAllTodos)
 	router.GET("/prods", controllers.GetAllProducts)
 	router.POST("/prod", controllers.CreateProd)
+	router.GET("/allpro/:proId",controllers.GetAllProductTodo)
 	router.POST("/todo", controllers.CreateTodo)
 	router.GET("/todo/:todoId", controllers.GetSingleTodo)
 	router.PUT("/todo/:todoId", controllers.EditTodo)
