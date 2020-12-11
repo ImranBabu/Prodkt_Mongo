@@ -69,6 +69,7 @@ type Device struct {
 	Warranty	int		`json:"Warranty"`
 	ManufactureDate time.Time `json:"manufactureDate"`
 	PurchaseDate time.Time `json:"purchaseDate"`
+	Is_Active	bool 	`json:"is_active"`
 }
 
 type Service struct {
@@ -82,6 +83,8 @@ type Service struct {
 	Issue string  `json:"issue"`
 	ReceivedDate    time.Time  `json:"receivedDate"`
 	ReturnedDate time.Time `json:"returnedDate"`
+	Is_Active	bool 	`json:"is_active"`
+	IS_Closed	bool	`json:"is_closed"`
 }
 
 // DATABASE INSTANCE
@@ -261,6 +264,7 @@ func CreateProd(c *gin.Context) {
 		Warranty: warranty,
 		ManufactureDate : manufactureDate,
 		PurchaseDate : purchaseDate,
+		Is_Active : true,
 	}
 
 	_, err := deviceCollections.InsertOne(context.TODO(), newTodo)
@@ -303,6 +307,8 @@ func CreateService(c *gin.Context) {
 		DeviceName : deviceName,
 		Issue : issue,
 		ReceivedDate : receivedDate,
+		Is_Active : true,
+		IS_Closed : false,
 		//ReturnedDate : returnedDate,
 	}
 
@@ -563,6 +569,49 @@ func GetDeviceByUser(c *gin.Context) {
 		"status":  http.StatusOK,
 		"message": "All Services",
 		"data":    showsLoaded,
+	})
+	return
+}
+
+
+func GetDeviceByUserID(c *gin.Context) {
+
+	var userIds GetDeviceUser
+
+	c.BindJSON(&userIds)
+
+	fmt.Println("User ID : ",userIds)
+	//pipelineResult := make([]OrderStatusTotal, 0)
+	pipeline := make([]bson.M, 0)
+
+	groupStage := bson.M{
+		"$group": bson.M{
+		"user": userIds,
+		"total": bson.M{"$sum": 1},
+		},
+	}
+
+	matchStage := bson.M{
+		"$match": bson.M{
+			"user": userIds,
+		},
+	}
+
+	pipeline = append(pipeline, matchStage,groupStage)
+
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	data, err := deviceCollections.Aggregate(ctx, pipeline)
+	if err != nil {
+		log.Println(err.Error())
+		fmt.Errorf("failed to execute aggregation %s", err.Error())
+		return
+	}
+
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "All Services",
+		"data" : data,
 	})
 	return
 }

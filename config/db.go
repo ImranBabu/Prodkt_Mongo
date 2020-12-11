@@ -14,9 +14,7 @@ import (
 
 func Connect() {
 	// Database Config
-	//mongodb+srv://<username>:<password>@cluster0-zzart.mongodb.net/test?retryWrites=true&w=majority
-	//mongodb://Imran:12345@localhost:27017/?authSource=admin
-	//clientOptions := options.Client().ApplyURI("mongodb://imran:12345@localhost:27017/test?authSource=admin&replicaSet=Cluster0-shard-0&readPreference=primary&appname=MongoDB%20Compass&ssl=true")
+	
 	clientOptions := options.Client().ApplyURI("mongodb://Imran:12345@localhost:27017/?authSource=admin")
 	client, err := mongo.NewClient(clientOptions)
 
