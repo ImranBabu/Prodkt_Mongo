@@ -9,14 +9,18 @@ import (
 
 func Routes(router *gin.Engine) {
 	router.GET("/", welcome)
-	router.GET("/todos", controllers.GetAllTodos)
-	router.GET("/prods", controllers.GetAllProducts)
-	router.POST("/prod", controllers.CreateProd)
-	router.GET("/allpro/:proId",controllers.GetAllProductTodo)
+	//router.GET("/todos", controllers.GetAllTodos)
+	//router.GET("/prods", controllers.GetAllProducts)
+	router.POST("/addUser", controllers.CreateUser)
+	router.POST("/addDevice", controllers.CreateProd)
+	router.POST("/addService", controllers.CreateService)
+	router.POST("/getAllDevices", controllers.GetAllDevices)
+	router.POST("/getDeviceUser", controllers.GetDeviceByUser)
+	/*router.GET("/allpro/:proId",controllers.GetAllProductTodo)
 	router.POST("/todo", controllers.CreateTodo)
 	router.GET("/todo/:todoId", controllers.GetSingleTodo)
 	router.PUT("/todo/:todoId", controllers.EditTodo)
-	router.DELETE("/todo/:todoId", controllers.DeleteTodo)
+	router.DELETE("/todo/:todoId", controllers.DeleteTodo)*/
 	router.NoRoute(notFound)
 }
 

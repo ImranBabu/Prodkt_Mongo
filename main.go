@@ -19,5 +19,5 @@ func main()  {
 	// Route Handlers / Endpoints
 	routes.Routes(router)
 
-	log.Fatal(router.Run(":8080"))
+	log.Fatal(router.Run(":9090"))
 }
