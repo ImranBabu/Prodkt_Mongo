@@ -35,5 +35,6 @@ func Connect() {
 	controllers.DeviceCollection(db)
 	controllers.ServiceCollection(db)
 	controllers.UserCollection(db)
+	controllers.TestCollection(db)
 	return
 }

@@ -17,6 +17,8 @@ func Routes(router *gin.Engine) {
 	router.POST("/getAllDevices", controllers.GetAllDevices)
 	router.POST("/getDeviceUser", controllers.GetDeviceByUser)
 	router.POST("/getDeviceUserID", controllers.GetDeviceByUserID)
+	router.POST("/insertTest", controllers.TestInsert)
+	router.POST("/testOne",controllers.TestQueryOne)
 	/*router.GET("/allpro/:proId",controllers.GetAllProductTodo)
 	router.POST("/todo", controllers.CreateTodo)
 	router.GET("/todo/:todoId", controllers.GetSingleTodo)

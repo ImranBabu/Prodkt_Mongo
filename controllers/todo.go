@@ -48,6 +48,13 @@ type GetDeviceUser struct{
 	ID		primitive.ObjectID 	`bson:"id"`
 }
 
+type TestCollectionStruct struct{
+	Item	string	`json:"item"`
+	Qty 	int		`json:"qty"`
+	Size 	interface{} 	`json:"size"`
+	Status 	string 		`json:"status"`
+}
+
 type User struct {
 	ID 		primitive.ObjectID `bson:"_id,omitempty"`
 	Username	string 	`json:"username"`
@@ -88,7 +95,7 @@ type Service struct {
 }
 
 // DATABASE INSTANCE
-var deviceCollections,serviceCollection,userCollection *mongo.Collection
+var deviceCollections,serviceCollection,userCollection,testCollection *mongo.Collection
 
 func UserCollection(c *mongo.Database){
 	userCollection = c.Collection("user")
@@ -102,77 +109,10 @@ func ServiceCollection(c *mongo.Database){
 	serviceCollection = c.Collection("service")
 }
 
-/*func GetAllProducts(c *gin.Context) {
-	pro := []Service{}
-	cursor, err := proCollection.Find(context.TODO(), bson.M{})
-
-	if err != nil {
-		log.Printf("Error while getting all todos, Reason: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Something went wrong",
-		})
-		return
-	}
-
-	// Iterate through the returned cursor.
-    for cursor.Next(context.TODO()) {
-				var prod Product
-        cursor.Decode(&prod)
-        pro = append(pro, prod)
-		}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "All Products",
-		"data":    pro,
-	})
-	return
+func TestCollection(c *mongo.Database){
+	testCollection = c.Collection("inventory_query_top")
 }
 
-func GetAllProductTodo(c *gin.Context) {
-	id := c.Param("proId")
-	pro := []Device{}
-	fmt.Println("ID : ",id)
-	pipe := []bson.M{{"$match": bson.M{"productid":id}}}
-	//resp := []bson.M{}
-	showInfoCursor, err := collections.Aggregate(context.TODO(),pipe)
-	if err != nil {
-		panic(err)
-	}
-	var showsWithInfo []bson.M
-	if err = showInfoCursor.All(context.TODO(), &showsWithInfo); err != nil {
-		panic(err)
-	}
-	fmt.Println("Show With Info : ",showsWithInfo[0]["body"])
-	//fmt.Println(resp)
-	cursor, err := proCollection.Find(context.TODO(), bson.M{})
-
-	if err != nil {
-		log.Printf("Error while getting all todos, Reason: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Something went wrong",
-		})
-		return
-	}
-
-	// Iterate through the returned cursor.
-	
-    for cursor.Next(context.TODO()) {
-		var prod Device
-        cursor.Decode(&prod)
-        pro = append(pro, prod)
-		}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "All Products",
-		"data":    pro,
-	})
-	return
-}
-*/
 
 func getHash(pwd []byte) string {        
     hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.MinCost)          
@@ -267,7 +207,7 @@ func CreateProd(c *gin.Context) {
 		Is_Active : true,
 	}
 
-	_, err := deviceCollections.InsertOne(context.TODO(), newTodo)
+	result, err := deviceCollections.InsertOne(context.TODO(), newTodo)
 
 	if err != nil {
 		log.Printf("Error while inserting new todo into db, Reason: %v\n", err)
@@ -281,6 +221,7 @@ func CreateProd(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"status":  http.StatusCreated,
 		"message": "Product created Successfully",
+		"data" : result.InsertedID,
 	})
 	return
 }
@@ -312,7 +253,7 @@ func CreateService(c *gin.Context) {
 		//ReturnedDate : returnedDate,
 	}
 
-	_, err := serviceCollection.InsertOne(context.TODO(), newTodo)
+	result, err := serviceCollection.InsertOne(context.TODO(), newTodo)
 
 	if err != nil {
 		log.Printf("Error while inserting new todo into db, Reason: %v\n", err)
@@ -326,6 +267,7 @@ func CreateService(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{
 		"status":  http.StatusCreated,
 		"message": "Todo created Successfully",
+		"data" : result.InsertedID,
 	})
 	return
 }
@@ -358,45 +300,6 @@ func CreateService(c *gin.Context) {
 	return
 }
 
-func CreateTodo(c *gin.Context) {
-	var todo Todo
-	c.BindJSON(&todo)
-	fmt.Println("todo : ",todo)
-	title := todo.Title
-	body := todo.Body
-	proId := todo.ProductId
-	completed := todo.Completed
-	id := guuid.New().String()
-	fmt.Println("Id : ",id)
-
-
-	newTodo := Todo{
-		ID: id,
-		ProductId : proId,
-		Title:     title,
-		Body:      body,
-		Completed: completed,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	_, err := collections.InsertOne(context.TODO(), newTodo)
-
-	if err != nil {
-		log.Printf("Error while inserting new todo into db, Reason: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Something went wrong",
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"status":  http.StatusCreated,
-		"message": "Todo created Successfully",
-	})
-	return
-}
 
 func GetSingleTodo(c *gin.Context) {
 	todoId := c.Param("todoId")
@@ -577,23 +480,24 @@ func GetDeviceByUser(c *gin.Context) {
 func GetDeviceByUserID(c *gin.Context) {
 
 	var userIds GetDeviceUser
-
+	//folders := []Device{}
 	c.BindJSON(&userIds)
+
 
 	fmt.Println("User ID : ",userIds)
 	//pipelineResult := make([]OrderStatusTotal, 0)
-	pipeline := make([]bson.M, 0)
+	/*pipeline := make([]bson.M, 0)
 
 	groupStage := bson.M{
 		"$group": bson.M{
-		"user": userIds,
+		"user": primitive.ObjectID(userIds.ID),
 		"total": bson.M{"$sum": 1},
 		},
 	}
 
 	matchStage := bson.M{
 		"$match": bson.M{
-			"user": userIds,
+			"user": primitive.ObjectID(userIds.ID),
 		},
 	}
 
@@ -605,8 +509,30 @@ func GetDeviceByUserID(c *gin.Context) {
 		log.Println(err.Error())
 		fmt.Errorf("failed to execute aggregation %s", err.Error())
 		return
-	}
+	}*/
 
+	query := []bson.M{{
+		"$lookup": bson.M{ // lookup the documents table here
+		  "from":         "user",
+		  "localField":   "user",
+		  "foreignField": "_id",
+		  "as":           "user",
+		}},
+		{"$match": bson.M{
+		  //"level": bson.M{"$lte": user.Level},
+		  "user": userIds.ID,
+	  }}}
+
+	  //lookupStage := bson.D{{"$lookup", bson.D{{"from", "user"}, {"localField", "user"}, {"foreignField", "_id"}, {"as", "user"}}}}
+	  
+	  ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	  data, err  := deviceCollections.Aggregate(ctx, query)
+	  if err != nil {
+		log.Println(err.Error())
+		fmt.Errorf("failed to execute aggregation %s", err.Error())
+		return
+	}
+	//err1 := data.All(&folders)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
@@ -614,4 +540,124 @@ func GetDeviceByUserID(c *gin.Context) {
 		"data" : data,
 	})
 	return
+}
+
+func TestInsert(c *gin.Context) {
+
+		// Start Example 6
+
+		docs := []interface{}{
+			bson.D{
+				{"item", "journal"},
+				{"qty", 25},
+				{"size", bson.D{
+					{"h", 14},
+					{"w", 21},
+					{"uom", "cm"},
+				}},
+				{"status", "A"},
+			},
+			bson.D{
+				{"item", "notebook"},
+				{"qty", 50},
+				{"size", bson.D{
+					{"h", 8.5},
+					{"w", 11},
+					{"uom", "in"},
+				}},
+				{"status", "A"},
+			},
+			bson.D{
+				{"item", "paper"},
+				{"qty", 100},
+				{"size", bson.D{
+					{"h", 8.5},
+					{"w", 11},
+					{"uom", "in"},
+				}},
+				{"status", "D"},
+			},
+			bson.D{
+				{"item", "planner"},
+				{"qty", 75},
+				{"size", bson.D{
+					{"h", 22.85},
+					{"w", 30},
+					{"uom", "cm"},
+				}},
+				{"status", "D"},
+			},
+			bson.D{
+				{"item", "postcard"},
+				{"qty", 45},
+				{"size", bson.D{
+					{"h", 10},
+					{"w", 15.25},
+					{"uom", "cm"},
+				}},
+				{"status", "A"},
+			},
+		}
+
+		result, err := testCollection.InsertMany(context.Background(), docs)
+		
+		if err != nil {
+			log.Printf("Error while inserting new todo into db, Reason: %v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status":  http.StatusInternalServerError,
+				"message": "Something went wrong",
+			})
+			return
+		}
+	
+		c.JSON(http.StatusCreated, gin.H{
+			"status":  http.StatusCreated,
+			"message": "Inserted Successfully",
+			"data" : result.InsertedIDs,
+		})
+		return
+
+}
+
+
+func TestQueryOne(c *gin.Context) {
+
+	todos := []TestCollectionStruct{}
+
+	var testStruct TestCollectionStruct
+	//folders := []Device{}
+	c.BindJSON(&testStruct)
+	fmt.Println("test Struct : ",testStruct.Status)
+	cursor, err := testCollection.Find(
+		context.Background(),
+		bson.D{{"status", testStruct.Status}},
+	)
+
+	if err != nil {
+		log.Printf("Error while inserting new todo into db, Reason: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Something went wrong",
+		})
+		return
+	}
+
+	for cursor.Next(context.TODO()) {
+		var todo TestCollectionStruct
+		cursor.Decode(&todo)
+		todos = append(todos, todo)
+		}
+	// End Example 9
+
+	//require.NoError(t, err)
+	//requireCursorLength(t, cursor, 2)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":  http.StatusCreated,
+		"message": "Queried Successfully",
+		"data" : todos,
+	})
+
+	return
+
 }
